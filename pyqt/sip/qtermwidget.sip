@@ -1,4 +1,4 @@
-%Module QTermWidget
+%Module(name=QTermWidget, use_limited_api=True)
 
 %ModuleHeaderCode
 #pragma GCC visibility push(default)
@@ -11,7 +11,7 @@
 class QTermWidget : QWidget {
 
 %TypeHeaderCode
-#include <../lib/qtermwidget.h>
+#include <qtermwidget.h>
 %End
 
 public:
@@ -37,6 +37,7 @@ public:
     bool terminalSizeHint();
     void startShellProgram();
     int getShellPID();
+    int getForegroundProcessId();
     void changeDir(const QString & dir);
     void setTerminalFont(QFont &font);
     QFont getTerminalFont();
@@ -48,6 +49,7 @@ public:
     void setArgs(QStringList & args);
     void setTextCodec(QTextCodec *codec);
     void setColorScheme(const QString & name);
+    QStringList getAvailableColorSchemes();
     static QStringList availableColorSchemes();
     static void addCustomColorSchemeDir(const QString& custom_dir);
     void setHistorySize(int lines);

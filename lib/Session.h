@@ -25,6 +25,7 @@
 #ifndef SESSION_H
 #define SESSION_H
 
+#include <QProcess>
 #include <QStringList>
 #include <QWidget>
 
@@ -162,7 +163,7 @@ public:
     /**
      * Sets the format used by this session for tab titles.
      *
-     * @param context The context whoose format should be set.
+     * @param context The context whose format should be set.
      * @param format The tab title format.  This may be a mixture
      * of plain text and dynamic elements denoted by a '%' character
      * followed by a letter.  (eg. %d for directory).  The dynamic
@@ -340,7 +341,7 @@ public:
     void setSize(const QSize & size);
 
     /** Sets the text codec used by this session's terminal emulation. */
-    void setCodec(QTextCodec * codec);
+    void setCodec(QTextCodec * codec) const;
 
     /**
      * Sets whether the session has a dark background or not.  The session
@@ -489,7 +490,7 @@ signals:
     void activity();
 
 private slots:
-    void done(int);
+    void done(int, QProcess::ExitStatus );
 
 //  void fireZModemDetected();
 
@@ -600,7 +601,7 @@ public:
      * Changes or activity in the group's master sessions may be propagated
      * to all the sessions in the group, depending on the current masterMode()
      *
-     * @param session The session whoose master status should be changed.
+     * @param session The session whose master status should be changed.
      * @param master True to make this session a master or false otherwise
      */
     void setMasterStatus( Session * session , bool master );
@@ -633,8 +634,8 @@ public:
     int masterMode() const;
 
 private:
-    void connectPair(Session * master , Session * other);
-    void disconnectPair(Session * master , Session * other);
+    void connectPair(Session * master , Session * other) const;
+    void disconnectPair(Session * master , Session * other) const;
     void connectAll(bool connect);
     QList<Session *> masters() const;
 

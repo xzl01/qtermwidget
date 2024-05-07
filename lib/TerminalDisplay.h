@@ -62,6 +62,13 @@ namespace Konsole
         MoveEndScreenWindow = 2
     };
 
+    enum BackgroundMode {
+        None,
+        Stretch,
+        Zoom,
+        Fit,
+        Center
+    };
 
 extern unsigned short vt100_graphics[32];
 
@@ -105,6 +112,9 @@ public:
 
     /** Sets the background image of the terminal display. */
     void setBackgroundImage(const QString& backgroundImage);
+
+    /** Sets the background image mode of the terminal display. */
+    void setBackgroundMode(BackgroundMode mode);
 
     /**
      * Specifies whether the terminal display has a vertical scroll bar, and if so whether it
@@ -196,7 +206,7 @@ public:
     void emitSelection(bool useXselection,bool appendReturn);
 
     /** change and wrap text corresponding to paste mode **/
-    void bracketText(QString& text);
+    void bracketText(QString& text) const;
 
     /**
      * Sets the shape of the keyboard cursor.  This is the cursor drawn
@@ -413,10 +423,15 @@ public:
 
     void setMotionAfterPasting(MotionAfterPasting action);
     int motionAfterPasting();
+    void setConfirmMultilinePaste(bool confirmMultilinePaste);
+    void setTrimPastedTrailingNewlines(bool trimPastedTrailingNewlines);
 
     // maps a point on the widget to the position ( ie. line and column )
     // of the character at that point.
-    void getCharacterPosition(const QPoint& widgetPoint,int& line,int& column) const;
+    void getCharacterPosition(const QPointF& widgetPoint,int& line,int& column) const;
+
+    void disableBracketedPasteMode(bool disable) { _disabledBracketedPasteMode = disable; }
+    bool bracketedPasteModeIsDisabled() const { return _disabledBracketedPasteMode; }
 
 public slots:
 
@@ -426,7 +441,7 @@ public slots:
      */
     void updateImage();
 
-    /** Essentially calles processFilters().
+    /** Essentially calls processFilters().
      */
     void updateFilters();
 
@@ -472,7 +487,7 @@ public slots:
     void outputSuspended(bool suspended);
 
     /**
-     * Sets whether the program whoose output is being displayed in the view
+     * Sets whether the program whose output is being displayed in the view
      * is interested in mouse events.
      *
      * If this is set to true, mouse signals will be emitted by the view when the user clicks, drags
@@ -518,7 +533,7 @@ signals:
     /**
      * Emitted when the user presses a key whilst the terminal widget has focus.
      */
-    void keyPressedSignal(QKeyEvent *e);
+    void keyPressedSignal(QKeyEvent *e, bool fromPaste);
 
     /**
      * A mouse event occurred.
@@ -657,7 +672,7 @@ private:
                                            const Character* style, bool invertCharacterColor);
     // draws a string of line graphics
     void drawLineCharString(QPainter& painter, int x, int y,
-                            const std::wstring& str, const Character* attributes);
+                            const std::wstring& str, const Character* attributes) const;
 
     // draws the preedit string for input methods
     void drawInputMethodPreeditString(QPainter& painter , const QRect& rect);
@@ -681,6 +696,9 @@ private:
     // the top, bottom and height of 'region' are taken into account,
     // the left and right are ignored.
     void scrollImage(int lines , const QRect& region);
+
+    // shows the multiline prompt
+    bool multilineConfirmation(const QString& text);
 
     void calcGeometry();
     void propagateSize();
@@ -753,6 +771,7 @@ private:
     bool _bidiEnabled;
     bool _mouseMarks;
     bool _bracketedPasteMode;
+    bool _disabledBracketedPasteMode;
 
     QPoint  _iPntSel; // initial selection point
     QPoint  _pntSel; // current selection point
@@ -803,9 +822,10 @@ private:
 
     QSize _size;
 
-    QRgb _blendColor;
+    qreal _opacity;
 
     QPixmap _backgroundImage;
+    BackgroundMode _backgroundMode;
 
     // list of filters currently applied to the display.  used for links and
     // search highlight
@@ -820,6 +840,8 @@ private:
 
 
     MotionAfterPasting mMotionAfterPasting;
+    bool _confirmMultilinePaste;
+    bool _trimPastedTrailingNewlines;
 
     struct InputMethodData
     {

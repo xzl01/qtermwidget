@@ -1,3 +1,87 @@
+qtermwidget (1.4.0-1) unstable; urgency=medium
+
+  * New upstream version 1.4.0
+  * debian/control: drop replaces and breaks that not exist in previous
+    stable release.
+
+ -- Andrew Lee (李健秋) <ajqlee@debian.org>  Mon, 11 Dec 2023 17:20:13 +0100
+
+qtermwidget (1.3.0-2) unstable; urgency=medium
+
+  [ ChangZhuo Chen (陳昌倬) ]
+  * docs(soversion): fix comment.
+
+  [ Andrew Lee (李健秋) ]
+  * debian/control: update team address.
+  * Added urlregexp.patch: by Joachim H. Kaiser <jhkaiser@web.de>.
+    (Closes: #985461)
+  * debian/copyright: remove source files that has been dropped in
+    upstream.
+
+ -- Andrew Lee (李健秋) <ajqlee@debian.org>  Wed, 06 Sep 2023 16:16:50 +0200
+
+qtermwidget (1.3.0-1) unstable; urgency=medium
+
+  * New upstream version 1.3.0
+  * debian/control: bump to Standards-version to 4.6.2, no changes needed.
+  * debian/control: build-deps on lxqt-build-tools (>= 0.13.0~).
+  * debian/copyright: update.
+  * debian/rules: Drop --fail-missing argument to dh_missing which is now
+    default in debhelper 13.
+  * debian/upstream/metadata: drop obsolete field Name.
+  * debian/upstream/metadata: correct the git Repository url as itʼs
+    different from Repository-Browse.
+
+ -- Andrew Lee (李健秋) <ajqlee@debian.org>  Sat, 05 Aug 2023 06:10:02 +0200
+
+qtermwidget (1.2.0-2) unstable; urgency=medium
+
+  * Merge to unstable.
+
+ -- ChangZhuo Chen (陳昌倬) <czchen@debian.org>  Fri, 02 Dec 2022 11:22:41 +0800
+
+qtermwidget (1.2.0-1) experimental; urgency=medium
+
+  [ Andrew Lee (李健秋) ]
+  * Add debian/salsa-ci.yml file.
+
+  [ Severus Septimius ]
+  * Delete useless symbols and install files
+  * Bump to libqtermwidget5-1 to match soname changes
+  * Update debian/changelog
+  * Update Build-Depends
+  * Bump Standards to 4.6.0 (no changes)
+
+  [ Debian Janitor ]
+  * Trim trailing whitespace.
+  * Fix field name typo in debian/upstream/metadata (Repository-Browser => Repository-Browse).
+  * Remove obsolete field Name from debian/upstream/metadata (already present in machine-readable debian/copyright).
+  * Update standards version to 4.6.1, no changes needed.
+  * Avoid explicitly specifying -Wl,--as-needed linker flag.
+
+  [ ChangZhuo Chen (陳昌倬) ]
+  * New upstream release.
+  * Fix d/watch for GitHub.
+
+ -- ChangZhuo Chen (陳昌倬) <czchen@debian.org>  Wed, 23 Nov 2022 02:16:15 +0800
+
+qtermwidget (1.1.0-1) experimental; urgency=medium
+
+  * New upstream release 1.1.0.
+  * Removed obsolete debian/compat file.
+  * Switched to GBP.
+  * Upstreamed non-Ubuntu-specific packaging changes from Ubuntu, modifying
+    the following files:
+    - control
+    - copyright
+    - *.install
+    - libqtermwidget5-0.symbols
+    - rules
+    - upstream/*
+    - patches directory
+
+ -- Aaron Rainbolt <arraybolt3@gmail.com>  Sun, 10 Jul 2022 05:32:17 -0500
+
 qtermwidget (0.16.1-1) unstable; urgency=medium
 
   * Team upload.
@@ -19,7 +103,7 @@ qtermwidget (0.14.1-3) unstable; urgency=medium
 
   * Bumped Standards-Version to 4.5.0, no changes needed
   * Removed the not existing package qtermwidget-l10n from recommends,
-    thanks @wxl, nice finding. 
+    thanks @wxl, nice finding.
 
  -- Alf Gaida <agaida@siduction.org>  Sun, 23 Feb 2020 22:16:09 +0100
 

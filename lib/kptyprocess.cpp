@@ -38,25 +38,29 @@
 #include <QDebug>
 
 KPtyProcess::KPtyProcess(QObject *parent) :
-    KProcess(new KPtyProcessPrivate, parent)
+    KPtyProcess(-1, parent)
 {
-    Q_D(KPtyProcess);
-
-    d->pty = new KPtyDevice(this);
-    d->pty->open();
-    connect(this, SIGNAL(stateChanged(QProcess::ProcessState)),
-            SLOT(_k_onStateChanged(QProcess::ProcessState)));
 }
 
 KPtyProcess::KPtyProcess(int ptyMasterFd, QObject *parent) :
-    KProcess(new KPtyProcessPrivate, parent)
+    KProcess(parent),
+    d_ptr(new KPtyProcessPrivate)
 {
     Q_D(KPtyProcess);
 
-    d->pty = new KPtyDevice(this);
-    d->pty->open(ptyMasterFd);
-    connect(this, SIGNAL(stateChanged(QProcess::ProcessState)),
-            SLOT(_k_onStateChanged(QProcess::ProcessState)));
+    d->pty = std::make_unique<KPtyDevice>(this);
+
+    if (ptyMasterFd == -1) {
+        d->pty->open();
+    } else {
+        d->pty->open(ptyMasterFd);
+    }
+
+    connect(this, &QProcess::stateChanged, this, [this](QProcess::ProcessState state) {
+        if (state == QProcess::NotRunning && d_ptr->addUtmp) {
+            d_ptr->pty->logout();
+        }
+    });
 }
 
 KPtyProcess::~KPtyProcess()
@@ -68,16 +72,14 @@ KPtyProcess::~KPtyProcess()
         if (d->addUtmp)
         {
             d->pty->logout();
-            disconnect(SIGNAL(stateChanged(QProcess::ProcessState)),
-                    this, SLOT(_k_onStateChanged(QProcess::ProcessState)));
+            disconnect(this, &QProcess::stateChanged, this, nullptr);
         }
     }
-    delete d->pty;
     waitForFinished(300); // give it some time to finish
     if (state() != QProcess::NotRunning)
     {
         qWarning() << Q_FUNC_INFO << "the terminal process is still running, trying to stop it by SIGHUP";
-        ::kill(pid(), SIGHUP);
+        ::kill(static_cast<pid_t>(processId()), SIGHUP);
         waitForFinished(300);
         if (state() != QProcess::NotRunning)
             qCritical() << Q_FUNC_INFO << "process didn't stop upon SIGHUP and will be SIGKILL-ed";
@@ -116,7 +118,7 @@ KPtyDevice *KPtyProcess::pty() const
 {
     Q_D(const KPtyProcess);
 
-    return d->pty;
+    return d->pty.get();
 }
 
 void KPtyProcess::setupChildProcess()
