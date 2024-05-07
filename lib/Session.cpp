@@ -112,7 +112,7 @@ Session::Session(QObject* parent) :
     connect( _emulation,SIGNAL(lockPtyRequest(bool)),_shellProcess,SLOT(lockPty(bool)) );
     connect( _emulation,SIGNAL(useUtf8Request(bool)),_shellProcess,SLOT(setUtf8Mode(bool)) );
 
-    connect( _shellProcess,SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(done(int)) );
+    connect( _shellProcess,SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(done(int,QProcess::ExitStatus)) );
     // not in kprocess anymore connect( _shellProcess,SIGNAL(done(int)), this, SLOT(done(int)) );
 
     //setup timer for monitoring session activity
@@ -143,7 +143,7 @@ bool Session::isRunning() const
     return _shellProcess->state() == QProcess::Running;
 }
 
-void Session::setCodec(QTextCodec * codec)
+void Session::setCodec(QTextCodec * codec) const
 {
     emulation()->setCodec(codec);
 }
@@ -174,8 +174,8 @@ void Session::addView(TerminalDisplay * widget)
 
     if ( _emulation != nullptr ) {
         // connect emulation - view signals and slots
-        connect( widget , SIGNAL(keyPressedSignal(QKeyEvent *)) , _emulation ,
-                 SLOT(sendKeyEvent(QKeyEvent *)) );
+        connect( widget , &TerminalDisplay::keyPressedSignal, _emulation ,
+                 &Emulation::sendKeyEvent);
         connect( widget , SIGNAL(mouseSignal(int,int,int,int)) , _emulation ,
                  SLOT(sendMouseEvent(int,int,int,int)) );
         connect( widget , SIGNAL(sendStringToEmu(const char *)) , _emulation ,
@@ -246,11 +246,11 @@ void Session::run()
     // Upon a KPty error, there is no description on what that error was...
     // Check to see if the given program is executable.
 
-    /* ok iam not exactly sure where _program comes from - however it was set to /bin/bash on my system
-     * Thats bad for BSD as its /usr/local/bin/bash there - its also bad for arch as its /usr/bin/bash there too!
+    /* ok I'm not exactly sure where _program comes from - however it was set to /bin/bash on my system
+     * That's bad for BSD as its /usr/local/bin/bash there - its also bad for arch as its /usr/bin/bash there too!
      * So i added a check to see if /bin/bash exists - if no then we use $SHELL - if that does not exist either, we fall back to /bin/sh
      * As far as i know /bin/sh exists on every unix system.. You could also just put some ifdef __FREEBSD__ here but i think these 2 filechecks are worth
-     * their computing time on any system - especially with the problem on arch linux beeing there too.
+     * their computing time on any system - especially with the problem on arch linux being there too.
      */
     QString exec = QString::fromLocal8Bit(QFile::encodeName(_program));
     // if 'exec' is not specified, fall back to default shell.  if that
@@ -323,7 +323,7 @@ void Session::runEmptyPTY()
     _shellProcess->setErase(_emulation->eraseChar());
     _shellProcess->setWriteable(false);
 
-    // disconnet send data from emulator to internal terminal process
+    // disconnect send data from emulator to internal terminal process
     disconnect( _emulation,SIGNAL(sendData(const char *,int)),
                 _shellProcess, SLOT(sendData(const char *,int)) );
 
@@ -539,7 +539,7 @@ void Session::refresh()
 
 bool Session::sendSignal(int signal)
 {
-    int result = ::kill(_shellProcess->pid(),signal);
+    int result = ::kill(static_cast<pid_t>(_shellProcess->processId()),signal);
 
      if ( result == 0 )
      {
@@ -567,7 +567,7 @@ void Session::sendText(const QString & text) const
 
 void Session::sendKeyEvent(QKeyEvent* e) const
 {
-    _emulation->sendKeyEvent(e);
+    _emulation->sendKeyEvent(e, false);
 }
 
 Session::~Session()
@@ -587,7 +587,7 @@ QString Session::profileKey() const
     return _profileKey;
 }
 
-void Session::done(int exitStatus)
+void Session::done(int exitCode, QProcess::ExitStatus exitStatus)
 {
     if (!_autoClose) {
         _userTitle = QString::fromLatin1("This session is done. Finished");
@@ -600,16 +600,16 @@ void Session::done(int exitStatus)
     // So, we make it translatable, hoping that in the future it will
     // be used in some kind of notification.
     QString message;
-    if (!_wantedClose || exitStatus != 0) {
+    if (!_wantedClose || exitCode != 0) {
 
         if (_shellProcess->exitStatus() == QProcess::NormalExit) {
-            message = tr("Session '%1' exited with status %2.").arg(_nameTitle).arg(exitStatus);
+            message = tr("Session '%1' exited with code %2.").arg(_nameTitle).arg(exitCode);
         } else {
             message = tr("Session '%1' crashed.").arg(_nameTitle);
         }
     }
 
-    if ( !_wantedClose && _shellProcess->exitStatus() != QProcess::NormalExit )
+    if ( !_wantedClose && exitStatus != QProcess::NormalExit )
         message = tr("Session '%1' exited unexpectedly.").arg(_nameTitle);
     else
         emit finished();
@@ -928,7 +928,7 @@ int Session::foregroundProcessId() const
 }
 int Session::processId() const
 {
-    return _shellProcess->pid();
+    return static_cast<int>(_shellProcess->processId());
 }
 int Session::getPtySlaveFd() const
 {
@@ -1034,7 +1034,7 @@ void SessionGroup::setMasterStatus(Session * session, bool master)
     }
 }
 
-void SessionGroup::connectPair(Session * master , Session * other)
+void SessionGroup::connectPair(Session * master , Session * other) const
 {
 //    qDebug() << k_funcinfo;
 
@@ -1045,7 +1045,7 @@ void SessionGroup::connectPair(Session * master , Session * other)
                  SLOT(sendString(const char *,int)) );
     }
 }
-void SessionGroup::disconnectPair(Session * master , Session * other)
+void SessionGroup::disconnectPair(Session * master , Session * other) const
 {
 //    qDebug() << k_funcinfo;
 

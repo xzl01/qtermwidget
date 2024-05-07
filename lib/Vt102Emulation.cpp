@@ -22,6 +22,7 @@
 
 // Own
 #include "Vt102Emulation.h"
+#include "tools.h"
 
 // XKB
 //#include <config-konsole.h>
@@ -45,6 +46,7 @@
 #include <QEvent>
 #include <QKeyEvent>
 #include <QByteRef>
+#include <QDebug>
 
 // KDE
 //#include <kdebug.h>
@@ -147,12 +149,12 @@ void Vt102Emulation::reset()
    The last two forms allow list of arguments. Since the elements of
    the lists are treated individually the same way, they are passed
    as individual tokens to the interpretation. Further, because the
-   meaning of the parameters are names (althought represented as numbers),
+   meaning of the parameters are names (although represented as numbers),
    they are includes within the token ('N').
 
 */
 
-#define TY_CONSTRUCT(T,A,N) ( ((((int)N) & 0xffff) << 16) | ((((int)A) & 0xff) << 8) | (((int)T) & 0xff) )
+#define TY_CONSTRUCT(T,A,N) ( (((static_cast<int>(N)) & 0xffff) << 16) | (((static_cast<int>(A)) & 0xff) << 8) | ((static_cast<int>(T)) & 0xff) )
 
 #define TY_CHR(   )     TY_CONSTRUCT(0,0,0)
 #define TY_CTL(A  )     TY_CONSTRUCT(1,A,0)
@@ -226,7 +228,7 @@ void Vt102Emulation::initTokenizer()
     charClass[i] |= CTL;
   for(i = 32;i < 256; ++i)
     charClass[i] |= CHR;
-  for(s = (quint8*)"@ABCDGHILMPSTXZbcdfry"; *s; ++s)
+  for(s = (quint8*)"@ABCDEFGHILMPSTXZbcdfry"; *s; ++s)
     charClass[*s] |= CPN;
   // resize = \e[8;<row>;<col>t
   for(s = (quint8*)"t"; *s; ++s)
@@ -664,8 +666,8 @@ void Vt102Emulation::processToken(int token, wchar_t p, int q)
     case TY_CSI_PN('B'      ) : _currentScreen->cursorDown           (p         ); break; //VT100
     case TY_CSI_PN('C'      ) : _currentScreen->cursorRight          (p         ); break; //VT100
     case TY_CSI_PN('D'      ) : _currentScreen->cursorLeft           (p         ); break; //VT100
-    case TY_CSI_PN('E'      ) : /* Not implemented: cursor next p lines */         break; //VT100
-    case TY_CSI_PN('F'      ) : /* Not implemented: cursor preceding p lines */    break; //VT100
+    case TY_CSI_PN('E'      ) : _currentScreen->cursorNextLine       (p         ); break; //VT100
+    case TY_CSI_PN('F'      ) : _currentScreen->cursorPreviousLine   (p         ); break; //VT100
     case TY_CSI_PN('G'      ) : _currentScreen->setCursorX           (p         ); break; //LINUX
     case TY_CSI_PN('H'      ) : _currentScreen->setCursorYX          (p,      q); break; //VT100
     case TY_CSI_PN('I'      ) : _currentScreen->tab                  (p         ); break;
@@ -757,7 +759,7 @@ void Vt102Emulation::processToken(int token, wchar_t p, int q)
     //Note about mouse modes:
     //There are four mouse modes which xterm-compatible terminals can support - 1000,1001,1002,1003
     //Konsole currently supports mode 1000 (basic mouse press and release) and mode 1002 (dragging the mouse).
-    //TODO:  Implementation of mouse modes 1001 (something called hilight tracking) and
+    //TODO:  Implementation of mouse modes 1001 (something called highlight tracking) and
     //1003 (a slight variation on dragging the mouse)
     //
 
@@ -894,7 +896,7 @@ void Vt102Emulation::reportTerminalType()
 
 void Vt102Emulation::reportSecondaryAttributes()
 {
-  // Seconday device attribute response (Request was: ^[[>0c or ^[[>c)
+  // Secondary device attribute response (Request was: ^[[>0c or ^[[>c)
   if (getMode(MODE_Ansi))
     sendString("\033[>0;115;0c"); // Why 115?  ;)
   else
@@ -1016,10 +1018,10 @@ void Vt102Emulation::sendText( const QString& text )
                     0,
                     Qt::NoModifier,
                     text);
-    sendKeyEvent(&event); // expose as a big fat keypress event
+    sendKeyEvent(&event, false); // expose as a big fat keypress event
   }
 }
-void Vt102Emulation::sendKeyEvent( QKeyEvent* event )
+void Vt102Emulation::sendKeyEvent(QKeyEvent* event, bool fromPaste)
 {
     Qt::KeyboardModifiers modifiers = event->modifiers();
     KeyboardTranslator::States states = KeyboardTranslator::NoState;
@@ -1107,6 +1109,9 @@ void Vt102Emulation::sendKeyEvent( QKeyEvent* event )
             textToSend += _codec->fromUnicode(event->text());
         }
 
+        if (!fromPaste && textToSend.length()) {
+            Q_EMIT outputFromKeypressEvent();
+        }
         Q_EMIT sendData( textToSend.constData() , textToSend.length() );
     }
     else
@@ -1360,28 +1365,11 @@ char Vt102Emulation::eraseChar() const
       return '\b';
 }
 
-// print contents of the scan buffer
-static void hexdump(wchar_t* s, int len)
-{ int i;
-  for (i = 0; i < len; i++)
-  {
-    if (s[i] == '\\')
-      printf("\\\\");
-    else
-    if ((s[i]) > 32 && s[i] < 127)
-      printf("%c",s[i]);
-    else
-      printf("\\%04x(hex)",s[i]);
-  }
-}
-
 void Vt102Emulation::reportDecodingError()
 {
   if (tokenBufferPos == 0 || ( tokenBufferPos == 1 && (tokenBuffer[0] & 0xff) >= 32) )
     return;
-  printf("Undecodable sequence: ");
-  hexdump(tokenBuffer,tokenBufferPos);
-  printf("\n");
+  qCDebug(qtermwidgetLogger) << "Undecodable sequence:" << QString::fromWCharArray(tokenBuffer, tokenBufferPos);
 }
 
 //#include "Vt102Emulation.moc"

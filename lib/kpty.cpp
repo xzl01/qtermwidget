@@ -205,7 +205,6 @@ KPty::KPty(KPtyPrivate *d) :
 KPty::~KPty()
 {
     close();
-    delete d_ptr;
 }
 
 bool KPty::open()
@@ -337,7 +336,8 @@ gotpty:
             !d->chownpty(true)) {
         qWarning()
         << "chownpty failed for device " << ptyName << "::" << d->ttyName
-        << "\nThis means the communication can be eavesdropped." << endl;
+        << "\nThis means the communication can be eavesdropped."
+        << Qt::endl;
     }
 
 #if defined (HAVE__GETPTY) || defined (HAVE_GRANTPT)
@@ -512,7 +512,7 @@ void KPty::login(const char * user, const char * remotehost)
     Q_D(KPty);
 
     addToUtmp(d->ttyName.constData(), remotehost, d->masterFd);
-    Q_UNUSED(user);
+    Q_UNUSED(user)
 #else
 # ifdef HAVE_UTMPX
     struct utmpx l_struct;

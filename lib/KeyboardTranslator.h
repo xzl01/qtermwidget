@@ -369,7 +369,7 @@ public:
     QString description() const;
 
     /** Returns true if there is another entry in the source stream */
-    bool hasNextEntry();
+    bool hasNextEntry() const;
     /** Returns the next entry found in the source stream */
     KeyboardTranslator::Entry nextEntry();
 
@@ -420,6 +420,9 @@ private:
     QString _description;
     KeyboardTranslator::Entry _nextEntry;
     bool _hasNext;
+
+    KeyboardTranslatorReader(const KeyboardTranslatorReader&) = delete;
+    KeyboardTranslatorReader& operator=(const KeyboardTranslatorReader&) = delete;
 };
 
 /** Writes a keyboard translation to disk. */
@@ -444,6 +447,9 @@ public:
 private:
     QIODevice* _destination;
     QTextStream* _writer;
+
+    KeyboardTranslatorWriter(const KeyboardTranslatorWriter&) = delete;
+    KeyboardTranslatorWriter& operator=(const KeyboardTranslatorWriter&) = delete;
 };
 
 /**

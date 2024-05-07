@@ -135,11 +135,10 @@ char Pty::erase() const
 
 void Pty::addEnvironmentVariables(const QStringList& environment)
 {
-    QListIterator<QString> iter(environment);
-    while (iter.hasNext())
-    {
-        QString pair = iter.next();
 
+    bool termEnvVarAdded = false;
+    for (const QString &pair : environment)
+    {
         // split on the first '=' character
         int pos = pair.indexOf(QLatin1Char('='));
 
@@ -149,8 +148,17 @@ void Pty::addEnvironmentVariables(const QStringList& environment)
             QString value = pair.mid(pos+1);
 
             setEnv(variable,value);
+
+            if (variable == QLatin1String("TERM")) {
+                termEnvVarAdded = true;
         }
     }
+
+    // fallback to ensure that $TERM is always set
+    if (!termEnvVarAdded) {
+        setEnv(QStringLiteral("TERM"), QStringLiteral("xterm-256color"));
+    }
+}
 }
 
 int Pty::start(const QString& program,
@@ -297,7 +305,7 @@ void Pty::dataReceived()
 
 void Pty::lockPty(bool lock)
 {
-    Q_UNUSED(lock);
+    Q_UNUSED(lock)
 
 // TODO: Support for locking the Pty
   //if (lock)

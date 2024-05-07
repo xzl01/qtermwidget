@@ -72,7 +72,7 @@ Emulation::Emulation() :
   connect(this , SIGNAL(programBracketedPasteModeChanged(bool)) ,
            SLOT(bracketedPasteModeChanged(bool)));
 
-  connect(this, &Emulation::cursorChanged, [this] (KeyboardCursorShape cursorShape, bool blinkingCursorEnabled) {
+  connect(this, &Emulation::cursorChanged, this, [this] (KeyboardCursorShape cursorShape, bool blinkingCursorEnabled) {
     emit titleChanged( 50, QString(QLatin1String("CursorShape=%1;BlinkingCursorEnabled=%2"))
                                .arg(static_cast<int>(cursorShape)).arg(blinkingCursorEnabled) );
   });
@@ -112,6 +112,8 @@ ScreenWindow* Emulation::createWindow()
 
     connect(this, &Emulation::handleCommandFromKeyboard,
             window, &ScreenWindow::handleCommandFromKeyboard);
+    connect(this, &Emulation::outputFromKeypressEvent,
+            window, &ScreenWindow::scrollToEnd);
 
     return window;
 }
@@ -210,7 +212,7 @@ void Emulation::receiveChar(wchar_t c)
   };
 }
 
-void Emulation::sendKeyEvent( QKeyEvent* ev )
+void Emulation::sendKeyEvent(QKeyEvent* ev, bool)
 {
   emit stateSet(NOTIFYNORMAL);
 
