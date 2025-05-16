@@ -467,7 +467,8 @@ void KPty::close()
         if (!geteuid()) {
             struct stat st;
             if (!stat(d->ttyName.data(), &st)) {
-                chown(d->ttyName.data(), 0, st.st_gid == getgid() ? 0 : -1);
+                int res = chown(d->ttyName.data(), 0, st.st_gid == getgid() ? 0 : -1);
+                Q_UNUSED (res);
                 chmod(d->ttyName.data(), S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
             }
         } else {
@@ -511,7 +512,7 @@ void KPty::login(const char * user, const char * remotehost)
 #ifdef HAVE_UTEMPTER
     Q_D(KPty);
 
-    addToUtmp(d->ttyName.constData(), remotehost, d->masterFd);
+    utempter_add_record(d->masterFd, remotehost);
     Q_UNUSED(user)
 #else
 # ifdef HAVE_UTMPX
@@ -597,7 +598,7 @@ void KPty::logout()
 #ifdef HAVE_UTEMPTER
     Q_D(KPty);
 
-    removeLineFromUtmp(d->ttyName.constData(), d->masterFd);
+    utempter_remove_record(d->masterFd);
 #else
     Q_D(KPty);
 

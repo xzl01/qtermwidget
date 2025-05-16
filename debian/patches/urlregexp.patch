@@ -1,21 +1,21 @@
 Description: Adds closing brace as delimiting character to FullUrlRegExp
  The closing brace happens to be present in BibTeX files to delimit URLs as
  value of the url field, for example.
-
----
+Forwarded: https://github.com/lxqt/qtermwidget/issues/559
 Author: Joachim H. Kaiser <jhkaiser@web.de>
-Last-Update: 2021-03-14
+Bug-Debian: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=985461
+Last-Update: 2024-09-22
 
---- qtermwidget-0.16.1.orig/lib/Filter.cpp
-+++ qtermwidget-0.16.1/lib/Filter.cpp
-@@ -464,8 +464,8 @@ void UrlFilter::HotSpot::activate(const
-
+--- a/lib/Filter.cpp
++++ b/lib/Filter.cpp
+@@ -469,8 +469,8 @@
+ 
  //regexp matches:
  // full url:
 -// protocolname:// or www. followed by anything other than whitespaces, <, >, ' or ", and ends before whitespaces, <, >, ', ", ], !, comma and dot
--const QRegExp UrlFilter::FullUrlRegExp(QLatin1String("(www\\.(?!\\.)|[a-z][a-z0-9+.-]*://)[^\\s<>'\"]+[^!,\\.\\s<>'\"\\]]"));
+-const QRegularExpression UrlFilter::FullUrlRegExp(QLatin1String("(www\\.(?!\\.)|[a-z][a-z0-9+.-]*://)[^\\s<>'\"]+[^!,\\.\\s<>'\"\\]]"));
 +// protocolname:// or www. followed by anything other than whitespaces, <, >, ' or ", and ends before whitespaces, <, >, ', ", ], }, !, comma and dot
-+const QRegExp UrlFilter::FullUrlRegExp(QLatin1String("(www\\.(?!\\.)|[a-z][a-z0-9+.-]*://)[^\\s<>'\"]+[^!,\\.\\s<>'\"\\]\\}]"));
++const QRegularExpression UrlFilter::FullUrlRegExp(QLatin1String("(www\\.(?!\\.)|[a-z][a-z0-9+.-]*://)[^\\s<>'\"]+[^!,\\.\\s<>'\"\\]\\}]"));
  // email address:
  // [word chars, dots or dashes]@[word chars, dots or dashes].[word chars]
- const QRegExp UrlFilter::EmailAddressRegExp(QLatin1String("\\b(\\w|\\.|-)+@(\\w|\\.|-)+\\.\\w+\\b"));
+ const QRegularExpression UrlFilter::EmailAddressRegExp(QLatin1String("\\b(\\w|\\.|-)+@(\\w|\\.|-)+\\.\\w+\\b"));
