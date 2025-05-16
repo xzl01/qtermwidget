@@ -33,14 +33,11 @@
 #include <QClipboard>
 #include <QHash>
 #include <QKeyEvent>
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QTextStream>
 #include <QThread>
 
 #include <QTime>
-
-// KDE
-//#include <kdebug.h>
 
 // Konsole
 #include "KeyboardTranslator.h"
@@ -52,25 +49,24 @@ using namespace Konsole;
 
 Emulation::Emulation() :
   _currentScreen(nullptr),
-  _codec(nullptr),
-  _decoder(nullptr),
   _keyTranslator(nullptr),
   _usesMouse(false),
-  _bracketedPasteMode(false)
+  _bracketedPasteMode(false),
+  _toUtf16(QStringConverter::Utf8)
 {
   // create screens with a default size
   _screen[0] = new Screen(40,80);
   _screen[1] = new Screen(40,80);
   _currentScreen = _screen[0];
 
-  QObject::connect(&_bulkTimer1, SIGNAL(timeout()), this, SLOT(showBulk()) );
-  QObject::connect(&_bulkTimer2, SIGNAL(timeout()), this, SLOT(showBulk()) );
+  QObject::connect(&_bulkTimer1, &QTimer::timeout, this, &Konsole::Emulation::showBulk);
+  QObject::connect(&_bulkTimer2, &QTimer::timeout, this, &Konsole::Emulation::showBulk);
 
   // listen for mouse status changes
-  connect(this , SIGNAL(programUsesMouseChanged(bool)) ,
-           SLOT(usesMouseChanged(bool)));
-  connect(this , SIGNAL(programBracketedPasteModeChanged(bool)) ,
-           SLOT(bracketedPasteModeChanged(bool)));
+  connect(this, &Konsole::Emulation::programUsesMouseChanged,
+          this, &Konsole::Emulation::usesMouseChanged);
+  connect(this, &Konsole::Emulation::programBracketedPasteModeChanged,
+          this, &Konsole::Emulation::bracketedPasteModeChanged);
 
   connect(this, &Emulation::cursorChanged, this, [this] (KeyboardCursorShape cursorShape, bool blinkingCursorEnabled) {
     emit titleChanged( 50, QString(QLatin1String("CursorShape=%1;BlinkingCursorEnabled=%2"))
@@ -104,11 +100,11 @@ ScreenWindow* Emulation::createWindow()
     window->setScreen(_currentScreen);
     _windows << window;
 
-    connect(window , SIGNAL(selectionChanged()),
-            this , SLOT(bufferedUpdate()));
+    connect(window, &Konsole::ScreenWindow::selectionChanged,
+            this, &Konsole::Emulation::bufferedUpdate);
 
-    connect(this , SIGNAL(outputChanged()),
-            window , SLOT(notifyOutputChanged()) );
+    connect(this, &Konsole::Emulation::outputChanged,
+            window, &Konsole::ScreenWindow::notifyOutputChanged);
 
     connect(this, &Emulation::handleCommandFromKeyboard,
             window, &ScreenWindow::handleCommandFromKeyboard);
@@ -129,7 +125,6 @@ Emulation::~Emulation()
 
   delete _screen[0];
   delete _screen[1];
-  delete _decoder;
 }
 
 void Emulation::setScreen(int n)
@@ -139,7 +134,7 @@ void Emulation::setScreen(int n)
   if (_currentScreen != old)
   {
      // tell all windows onto this emulation to switch to the newly active screen
-     for(ScreenWindow* window : qAsConst(_windows))
+     for(ScreenWindow* window : std::as_const(_windows))
          window->setScreen(_currentScreen);
   }
 }
@@ -158,27 +153,6 @@ void Emulation::setHistory(const HistoryType& t)
 const HistoryType& Emulation::history() const
 {
   return _screen[0]->getScroll();
-}
-
-void Emulation::setCodec(const QTextCodec * qtc)
-{
-  if (qtc)
-      _codec = qtc;
-  else
-     setCodec(LocaleCodec);
-
-  delete _decoder;
-  _decoder = _codec->makeDecoder();
-
-  emit useUtf8Request(utf8());
-}
-
-void Emulation::setCodec(EmulationCodec codec)
-{
-    if ( codec == Utf8Codec )
-        setCodec( QTextCodec::codecForName("utf8") );
-    else if ( codec == LocaleCodec )
-        setCodec( QTextCodec::codecForLocale() );
 }
 
 void Emulation::setKeyBindings(const QString& name)
@@ -250,8 +224,9 @@ void Emulation::receiveData(const char* text, int length)
      * U+10FFFF
      * https://unicodebook.readthedocs.io/unicode_encodings.html#surrogates
      */
-    QString utf16Text = _decoder->toUnicode(text,length);
-    std::wstring unicodeText = utf16Text.toStdWString();
+    QByteArray ba(text, length);
+    QString str = _toUtf16(ba);
+    std::wstring unicodeText = str.toStdWString();
 
     //send characters to terminal emulator
     for (size_t i=0;i<unicodeText.length();i++)
@@ -332,9 +307,6 @@ int Emulation::lineCount() const
     return _currentScreen->getLines() + _currentScreen->getHistLines();
 }
 
-#define BULK_TIMEOUT1 10
-#define BULK_TIMEOUT2 40
-
 void Emulation::showBulk()
 {
     _bulkTimer1.stop();
@@ -348,6 +320,9 @@ void Emulation::showBulk()
 
 void Emulation::bufferedUpdate()
 {
+    static const int BULK_TIMEOUT1 = 10;
+    static const int BULK_TIMEOUT2 = 40;
+
    _bulkTimer1.setSingleShot(true);
    _bulkTimer1.start(BULK_TIMEOUT1);
    if (!_bulkTimer2.isActive())

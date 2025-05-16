@@ -24,20 +24,6 @@
 #include "Vt102Emulation.h"
 #include "tools.h"
 
-// XKB
-//#include <config-konsole.h>
-
-// this allows konsole to be compiled without XKB and XTEST extensions
-// even though it might be available on a particular system.
-#if defined(AVOID_XKB)
-    #undef HAVE_XKB
-#endif
-
-#if defined(HAVE_XKB)
-    void scrolllock_set_off();
-    void scrolllock_set_on();
-#endif
-
 // Standard
 #include <cstdio>
 #include <unistd.h>
@@ -45,12 +31,7 @@
 // Qt
 #include <QEvent>
 #include <QKeyEvent>
-#include <QByteRef>
 #include <QDebug>
-
-// KDE
-//#include <kdebug.h>
-//#include <klocale.h>
 
 // Konsole
 #include "KeyboardTranslator.h"
@@ -63,10 +44,12 @@ Vt102Emulation::Vt102Emulation()
     : Emulation(),
      prevCC(0),
      _titleUpdateTimer(new QTimer(this)),
-     _reportFocusEvents(false)
+     _reportFocusEvents(false),
+     _toUtf8(QStringEncoder::Utf8)
 {
   _titleUpdateTimer->setSingleShot(true);
-  QObject::connect(_titleUpdateTimer , SIGNAL(timeout()) , this , SLOT(updateTitle()));
+  QObject::connect(_titleUpdateTimer, &QTimer::timeout,
+          this, &Konsole::Vt102Emulation::updateTitle);
 
   initTokenizer();
   reset();
@@ -89,7 +72,6 @@ void Vt102Emulation::reset()
   _screen[0]->reset();
   resetCharset(1);
   _screen[1]->reset();
-  setCodec(LocaleCodec);
 
   bufferedUpdate();
 }
@@ -529,8 +511,8 @@ void Vt102Emulation::processToken(int token, wchar_t p, int q)
     case TY_ESC_CS('+', 'A') :      setCharset           (3,    'A'); break; //VT100
     case TY_ESC_CS('+', 'B') :      setCharset           (3,    'B'); break; //VT100
 
-    case TY_ESC_CS('%', 'G') :      setCodec             (Utf8Codec   ); break; //LINUX
-    case TY_ESC_CS('%', '@') :      setCodec             (LocaleCodec ); break; //LINUX
+    case TY_ESC_CS('%', 'G') :      /*No longer updating codec*/      break; //LINUX
+    case TY_ESC_CS('%', '@') :      /*No longer updating codec*/      break; //LINUX
 
     case TY_ESC_DE('3'      ) : /* Double height line, top half    */
                                 _currentScreen->setLineProperty( LINE_DOUBLEWIDTH , true );
@@ -958,7 +940,7 @@ void Vt102Emulation::sendMouseEvent( int cb, int cx, int cy , int eventType )
     if ((getMode(MODE_Mouse1002) || getMode(MODE_Mouse1003)) && eventType == 1)
       cb += 0x20; //add 32 to signify motion event
 
-    char command[32];
+    char command[40];
     command[0] = '\0';
     // Check the extensions in decreasing order of preference. Encoding the release event above assumes that 1006 comes first.
     if (getMode(MODE_Mouse1006)) {
@@ -971,8 +953,8 @@ void Vt102Emulation::sendMouseEvent( int cb, int cx, int cy , int eventType )
             // coordinate+32, no matter what the locale is. We could easily
             // convert manually, but QString can also do it for us.
             QChar coords[2];
-            coords[0] = cx + 0x20;
-            coords[1] = cy + 0x20;
+            coords[0] = QChar(cx + 0x20);
+            coords[1] = QChar(cy + 0x20);
             QString coordsStr = QString(coords, 2);
             QByteArray utf8 = coordsStr.toUtf8();
             snprintf(command, sizeof(command), "\033[M%c%s", cb + 0x20, utf8.constData());
@@ -1091,7 +1073,9 @@ void Vt102Emulation::sendKeyEvent(QKeyEvent* event, bool fromPaste)
         }
         else if ( !entry.text().isEmpty() )
         {
-            textToSend += _codec->fromUnicode(QString::fromUtf8(entry.text(true,modifiers)));
+	    QString str = QString::fromUtf8(entry.text(true,modifiers));
+	    QByteArray bytes = _toUtf8(str);
+	    textToSend += bytes;
         }
         else if((modifiers & KeyboardTranslator::CTRL_MOD) && event->key() >= 0x40 && event->key() < 0x5f) {
             textToSend += (event->key() & 0x1f);
@@ -1106,7 +1090,8 @@ void Vt102Emulation::sendKeyEvent(QKeyEvent* event, bool fromPaste)
             textToSend += "\033[6~";
         }
         else {
-            textToSend += _codec->fromUnicode(event->text());
+	    QByteArray bytes = _toUtf8(event->text());
+	    textToSend += bytes;
         }
 
         if (!fromPaste && textToSend.length()) {
@@ -1123,7 +1108,7 @@ void Vt102Emulation::sendKeyEvent(QKeyEvent* event, bool fromPaste)
                                          "into characters to send to the terminal "
                                          "is missing.");
         reset();
-        receiveData( translatorError.toUtf8().constData() , translatorError.count() );
+        receiveData( translatorError.toUtf8().constData() , translatorError.size() );
     }
 }
 
@@ -1359,7 +1344,7 @@ char Vt102Emulation::eraseChar() const
                                             Qt::Key_Backspace,
                                             Qt::NoModifier,
                                             KeyboardTranslator::NoState);
-  if ( entry.text().count() > 0 )
+  if ( entry.text().size() > 0 )
       return entry.text().at(0);
   else
       return '\b';

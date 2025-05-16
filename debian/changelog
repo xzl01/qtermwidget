@@ -1,8 +1,49 @@
-qtermwidget (1.4.0-1deepin0) unstable; urgency=medium
+qtermwidget (2.1.0-1) unstable; urgency=medium
 
-  * No source change upload against GCC 12.
+  * New upstream version 2.1.0.
+  * debian/control: build-deps on lxqt-build-tools (>= 2.1.0~).
 
- -- Tianyu Chen <sweetyfish@deepin.org>  Fri, 20 Sep 2024 12:17:23 +0800
+ -- Macy Lin <macy@debconf.org>  Sat, 07 Dec 2024 11:38:07 +0100
+
+qtermwidget (2.0.1-1) unstable; urgency=medium
+
+  * Upload to unstable.
+
+ -- Andrew Lee (李健秋) <ajqlee@debian.org>  Wed, 27 Nov 2024 18:58:00 +0100
+
+qtermwidget (2.0.1-1~exp1) experimental; urgency=medium
+
+  [ Severus Septimius ]
+  * New upstream release 2.0.1
+  * debian/control: bump dep on lxqt-build-tools (>= 2.0.0+really2.0.0~)
+  * debian/control: bump dep on qtbase5-dev -> qt6-base-dev
+  * debian/control: rename libqtermwidget5-1-dev to libqtermwidget-dev
+  * debian/control: drop Qt version from package name (qtermwidget-data)
+  * debian/control: bump soversion in package names
+  * debian/control: bump Qt version in package descriptions
+  * debian/control: bump soversion in .install files' names
+  * debian/libqtermwidget-dev.install: bump soversion
+  * debian/libqtermwidget6-2.install: bump soversion
+  * debian/libqtermwidget-data.install: bump soversion
+  * Update urlregexp.patch
+  * debian/control: bump dep on qttools5-dev -> qt6-tools-dev
+
+  [ Andrew Lee (李健秋) ]
+  * Clean up of group membership after 2nd calls.
+  * debian/control: Added conflicts and replaces that exist in previs
+    stable release.
+  * debian/salsa-ci.yml: build against to experimental.
+  * debian/copyright: update.
+
+ -- Andrew Lee (李健秋) <ajqlee@debian.org>  Sun, 22 Sep 2024 15:16:23 +0200
+
+qtermwidget (1.4.0-2) unstable; urgency=medium
+
+  * debian/control: build-deps on qttools5-dev. (Closes:#1078313)
+  * debian/control: bump to Standards-version to 4.7.0, no changes needed.
+  * debian/copyright: added myself.
+
+ -- Macy Lin <macy@debconf.org>  Mon, 09 Sep 2024 21:48:14 +0800
 
 qtermwidget (1.4.0-1) unstable; urgency=medium
 

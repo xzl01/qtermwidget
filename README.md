@@ -2,7 +2,7 @@
 
 ## Overview
 
-A terminal emulator widget for Qt 5.
+A terminal emulator widget for Qt 6.
 
 QTermWidget is an open-source project originally based on the KDE4 Konsole application, but it took its own direction later on.
 The main goal of this project is to provide a Unicode-enabled, embeddable Qt widget for using as a built-in console (or terminal emulation widget).
@@ -45,10 +45,10 @@ License: BSD-3-clause
 
 ### Compiling sources
 
-The only runtime dependency is qtbase ≥ 5.12.0.
+The only runtime dependency is qtbase ≥ 6.6.0.
 Build dependencies are as follows:
-- CMake ≥ 3.1.0 serves as the build system and therefore needs to be present to compile.
-- The latest [lxqt-build-tools](https://github.com/lxqt/lxqt-build-tools/) is also needed for compilation.
+- CMake ≥ 3.16.0 serves as the build system and therefore needs to be present to compile.
+- [lxqt-build-tools](https://github.com/lxqt/lxqt-build-tools/) ≥ 2.0.0 is also needed for compilation.
 - Git is needed to optionally pull latest VCS checkouts.
 
 Code configuration is handled by CMake. CMake variable `CMAKE_INSTALL_PREFIX` will normally have to be set to `/usr`, depending on the way library paths are dealt with on 64bit systems. Variables like `CMAKE_INSTALL_LIBDIR` may have to be set as well.
@@ -92,6 +92,7 @@ enum | KeyboardCursorShape { BlockCursor, UnderlineCursor, IBeamCursor }
 * sizeHint : const QSize
 * terminalSizeHint : bool
 * title : const QString
+* wordCharacters : QString
 * workingDirectory : QString
 
 ### Public Functions
@@ -123,7 +124,6 @@ void | setSilenceTimeout(int _seconds_)
 void | setTerminalFont(QFont &_font_)
 void | setTerminalOpacity(qreal _level_)
 void | setTerminalSizeHint(bool _enabled_)
-void | setTextCodec(QTextCodec *_codec_)
 void | setWorkingDirectory(const QString &_dir_)
 void | startShellProgram()
 void | startTerminalTeletype()
@@ -230,6 +230,10 @@ Returns the currently selected text.
 <!--**title : const QString**\-->
 <!--**workingDirectory : QString**\-->
 
+**wordCharacters : QString**\
+When selecting text by word, consider these characters to be word characters in addition to
+alphanumeric characters, default is `:@-./_~`.
+
 ### Member Function Documentation
 <!--__void activity()__\-->
 <!--__void bell(const QString &_message_)__\-->
@@ -319,9 +323,6 @@ Sets terminal font. Default is application font with family Monospace, size 10. 
 
 __void setTerminalSizeHint(bool _enabled_)__\
 Exposes TerminalDisplay::TerminalSizeHint.
-
-__void setTextCodec(QTextCodec *_codec_)__\
-Sets text codec, default is UTF-8.
 
 <!--__void setWorkingDirectory(const QString &_dir_)__\-->
 <!--__void silence()__\-->
