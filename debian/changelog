@@ -1,3 +1,10 @@
+qtermwidget (2.1.0-1deepin1) unstable; urgency=medium
+
+  *Conflicts: libqtermwidget6-data
+  *Replaces: libqtermwidget6-data
+
+ -- xiangzelong <xiangzelong@deepin.org>  Mon, 07 Jul 2025 17:17:34 +0800
+
 qtermwidget (2.1.0-1) unstable; urgency=medium
 
   * New upstream version 2.1.0.
